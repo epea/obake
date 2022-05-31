@@ -2,6 +2,8 @@
 #include <WiFi.h>
 #include <esp_wifi.h>
 
+#include "M5StickCPlus.h"
+
 // Global copy of slave
 esp_now_peer_info_t slave;
 #define CHANNEL 3
@@ -156,18 +158,16 @@ void deletePeer() {
   }
 }
 
-uint8_t data = 0;
-// send data
-void sendData() {
-  data++;
+void sendData(unsigned char toggleData) {
+
   const uint8_t *peer_addr = slave.peer_addr;
   Serial.println("slave.channel");
   Serial.println(slave.channel);
   Serial.println("slave.peer_addr");
   printf("%u\n", peer_addr);
   
-  Serial.print("Sending: "); Serial.println(data);
-  esp_err_t result = esp_now_send(peer_addr, &data, sizeof(data));
+  Serial.print("Sending: "); Serial.println(toggleData);
+  esp_err_t result = esp_now_send(peer_addr, &toggleData, sizeof(toggleData));
   Serial.print("Send Status: ");
   if (result == ESP_OK) {
     Serial.println("Success");
@@ -197,8 +197,8 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 }
 
 void setup() {
-  Serial.begin(115200);
-  //Set device in STA mode to begin with
+  M5.begin();
+  
   WiFi.mode(WIFI_STA);
   esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE);
   
@@ -224,30 +224,34 @@ void setup() {
   esp_now_register_send_cb(OnDataSent);
 }
 
+bool toggleData = false;
 void loop() {
-  Serial.printf("WiFi.channel %d\n",WiFi.channel());
-  Serial.printf("slave.channel %d\n",slave.channel);
-  // In the loop we scan for slave
-  ScanForSlave();
-  // If Slave is found, it would be populate in `slave` variable
-  // We will check if `slave` is defined and then we proceed further
-  if (slave.channel == CHANNEL) { // check if slave channel is defined
-    // `slave` is defined
-    // Add slave as peer if it has not been added already
-    bool isPaired = manageSlave();
+  M5.update();
+  if (M5.BtnA.wasReleased()) {
+    Serial.println("Button A");
+    Serial.printf("WiFi.channel %d\n",WiFi.channel());
+    Serial.printf("slave.channel %d\n",slave.channel);
+      ScanForSlave();
+  }if (M5.BtnB.wasReleased()) {
+        Serial.println("Button B");
+    if (slave.channel == CHANNEL) { // check if slave channel is defined
+        // `slave` is defined
+        // Add slave as peer if it has not been added already
+        bool isPaired = manageSlave();
     if (isPaired) {
-      // pair success or already paired
-      // Send data to device
-      sendData();
+      toggleData = !toggleData;
+      sendData(toggleData);
     } else {
       // slave pair failed
       Serial.println("Slave pair failed!");
     }
   }
+  }
+
+  // If Slave is found, it would be populate in `slave` variable
+  // We will check if `slave` is defined and then we proceed further
+
   else {
     // No slave found to process
   }
-
-  // wait for 3seconds to run the logic again
-  delay(3000);
 }
