@@ -57,10 +57,10 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
   Serial.print("Last Packet Recv Data: "); Serial.println(*data);
   if(*data == 0){
     Serial.println("zero");
-    digitalWrite(MOTER_PIN, HIGH);
+    digitalWrite(MOTER_PIN, LOW);
   } else if(*data == 1){
     Serial.println("ichi");
-    digitalWrite(MOTER_PIN, LOW);
+    digitalWrite(MOTER_PIN, HIGH);
   } else {
     // TODO PWM使えるようにしてから子機間違えそうなのであさーと入れる
     Serial.println("hoka");
